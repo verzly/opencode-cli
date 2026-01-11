@@ -129,14 +129,6 @@ jobs:
             
             ## Original Release Notes
             ${{ steps.source_release.outputs.body }}
-            
-            ---
-            
-            **Files:**
-            - `opencode-baseline.exe` - Baseline version
-            - `opencode.exe` - Optimized version
-            - `opencode-cli.exe` - CLI tool
-            - `opencode-server.exe` - Server executable
           draft: false
           prerelease: false
         env:
