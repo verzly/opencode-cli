@@ -17,7 +17,7 @@ env:
   SOURCE_REPO: opencode
   # Update these to your own repository
   TARGET_OWNER: ${{ github.repository_owner }}
-  TARGET_REPO: opencode-cli
+  TARGET_REPO: opencode-windows
   # Replace with your token secret name if needed
   GITHUB_TOKEN_FOR_SOURCE: ${{ secrets.GITHUB_TOKEN }}
 
@@ -79,8 +79,6 @@ jobs:
           ZIPS=(
             "opencode-windows-x64-baseline.zip:./opencode.exe:opencode-baseline.exe"
             "opencode-windows-x64.zip:./opencode.exe:opencode.exe"
-            # "opencode-windows-x64.zip:./cli/tool.exe:opencode-cli.exe"
-            # "opencode-windows-x64.zip:./server/server.exe:opencode-server.exe"
           )
           
           # Download and extract
