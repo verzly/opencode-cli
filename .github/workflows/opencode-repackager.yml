@@ -17,9 +17,7 @@ env:
   SOURCE_REPO: opencode
   # Update these to your own repository
   TARGET_OWNER: ${{ github.repository_owner }}
-  TARGET_REPO: opencode-windows
-  # Replace with your token secret name if needed
-  GITHUB_TOKEN_FOR_SOURCE: ${{ secrets.GITHUB_TOKEN }}
+  TARGET_REPO: opencode-cli
 
 jobs:
   repackage:
@@ -34,19 +32,15 @@ jobs:
         run: |
           if [ "${{ github.event.inputs.source_version }}" = "latest" ] || [ -z "${{ github.event.inputs.source_version }}" ]; then
             RELEASE_INFO=$(curl -s \
-              -H "Authorization: token ${{ env.GITHUB_TOKEN_FOR_SOURCE }}" \
               "https://api.github.com/repos/${{ env.SOURCE_OWNER }}/${{ env.SOURCE_REPO }}/releases/latest")
           else
             RELEASE_INFO=$(curl -s \
-              -H "Authorization: token ${{ env.GITHUB_TOKEN_FOR_SOURCE }}" \
               "https://api.github.com/repos/${{ env.SOURCE_OWNER }}/${{ env.SOURCE_REPO }}/releases/tags/${{ github.event.inputs.source_version }}")
           fi
           
           TAG_NAME=$(echo "$RELEASE_INFO" | jq -r '.tag_name')
-          BODY=$(echo "$RELEASE_INFO" | jq -r '.body')
           
           echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
-          echo "body=$BODY" >> $GITHUB_OUTPUT
           echo "release_info=$RELEASE_INFO" >> $GITHUB_OUTPUT
           
           echo "Found version: $TAG_NAME"
@@ -55,7 +49,6 @@ jobs:
         id: check_version
         run: |
           VERSION_EXISTS=$(curl -s \
-            -H "Authorization: token ${{ env.GITHUB_TOKEN_FOR_SOURCE }}" \
             "https://api.github.com/repos/${{ env.TARGET_OWNER }}/${{ env.TARGET_REPO }}/releases/tags/${{ steps.source_release.outputs.tag_name }}" \
             | jq -r '.tag_name // "NOT_FOUND"')
           
@@ -75,7 +68,6 @@ jobs:
           
           # ZIP files configuration
           # Format: zip_filename:path_in_zip:output_filename
-          # Same zip_filename can appear multiple times to extract multiple files
           ZIPS=(
             "opencode-windows-x64-baseline.zip:./opencode.exe:opencode-baseline.exe"
             "opencode-windows-x64.zip:./opencode.exe:opencode.exe"
@@ -101,13 +93,17 @@ jobs:
             echo "Extracting: $zip_name"
             unzip -q "downloads/$zip_name" -d "downloads/$zip_name.extracted"
             
-            # Find and copy file
+            # Find and copy file - try with and without ./
             if [ -f "downloads/$zip_name.extracted/$path_in_zip" ]; then
               cp "downloads/$zip_name.extracted/$path_in_zip" "output/$output_name"
               echo "✓ $zip_name -> $output_name"
+            elif [ -f "downloads/$zip_name.extracted${path_in_zip#./}" ]; then
+              cp "downloads/$zip_name.extracted${path_in_zip#./}" "output/$output_name"
+              echo "✓ $zip_name -> $output_name"
             else
               echo "❌ Path not found: $path_in_zip in $zip_name"
-              ls -la "downloads/$zip_name.extracted/" || true
+              echo "Directory contents:"
+              find "downloads/$zip_name.extracted/" -type f -name "*.exe" | head -20
               exit 1
             fi
           done
@@ -120,14 +116,7 @@ jobs:
         with:
           tag_name: ${{ steps.source_release.outputs.tag_name }}
           files: output/*
-          body: |
-            # OpenCode Windows Executables
-            
-            These executables were automatically repackaged from OpenCode [${{ steps.source_release.outputs.tag_name }}](https://github.com/${{ env.SOURCE_OWNER }}/${{ env.SOURCE_REPO }}/releases/tag/${{ steps.source_release.outputs.tag_name }}).
-            
-            ## Original Release Notes
-            ${{ steps.source_release.outputs.body }}
-          draft: false
+          body: "These executables were automatically repackaged from OpenCode ${{ steps.source_release.outputs.tag_name }}.\n\nSee the original release: https://github.com/${{ env.SOURCE_OWNER }}/${{ env.SOURCE_REPO }}/releases/tag/${{ steps.source_release.outputs.tag_name }}"
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
