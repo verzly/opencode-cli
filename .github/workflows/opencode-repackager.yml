@@ -1,122 +1,76 @@
 name: Repackage OpenCode Windows Executables
 
 on:
-  schedule:
-    # Runs daily at 2:00 AM UTC
-    - cron: '0 2 * * *'
-  
   workflow_dispatch:
     inputs:
-      source_version:
-        description: 'Source version (e.g., v1.1.13), or leave empty for latest'
-        required: false
-        default: 'latest'
-
-env:
-  SOURCE_OWNER: anomalyco
-  SOURCE_REPO: opencode
-  # Update these to your own repository
-  TARGET_OWNER: ${{ github.repository_owner }}
-  TARGET_REPO: opencode-cli
+      version:
+        description: 'Release version (e.g., v1.1.13)'
+        required: true
+        type: string
 
 jobs:
   repackage:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Checkout target repository
+      - name: Checkout repository
         uses: actions/checkout@v4
       
-      - name: Get latest release info
-        id: source_release
-        run: |
-          if [ "${{ github.event.inputs.source_version }}" = "latest" ] || [ -z "${{ github.event.inputs.source_version }}" ]; then
-            RELEASE_INFO=$(curl -s \
-              "https://api.github.com/repos/${{ env.SOURCE_OWNER }}/${{ env.SOURCE_REPO }}/releases/latest")
-          else
-            RELEASE_INFO=$(curl -s \
-              "https://api.github.com/repos/${{ env.SOURCE_OWNER }}/${{ env.SOURCE_REPO }}/releases/tags/${{ github.event.inputs.source_version }}")
-          fi
-          
-          TAG_NAME=$(echo "$RELEASE_INFO" | jq -r '.tag_name')
-          
-          echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
-          echo "release_info=$RELEASE_INFO" >> $GITHUB_OUTPUT
-          
-          echo "Found version: $TAG_NAME"
-      
-      - name: Check if version already exists
-        id: check_version
-        run: |
-          VERSION_EXISTS=$(curl -s \
-            "https://api.github.com/repos/${{ env.TARGET_OWNER }}/${{ env.TARGET_REPO }}/releases/tags/${{ steps.source_release.outputs.tag_name }}" \
-            | jq -r '.tag_name // "NOT_FOUND"')
-          
-          if [ "$VERSION_EXISTS" = "NOT_FOUND" ]; then
-            echo "exists=false" >> $GITHUB_OUTPUT
-            echo "Version does not exist, proceeding..."
-          else
-            echo "exists=true" >> $GITHUB_OUTPUT
-            echo "Version already exists, skipping."
-          fi
-      
       - name: Download and repackage executables
-        if: steps.check_version.outputs.exists == 'false'
         id: repackage
         run: |
           mkdir -p downloads output
           
+          VERSION="${{ github.event.inputs.version }}"
+          REPO_URL="https://github.com/anomalyco/opencode/releases/download"
+          
           # ZIP files configuration
           # Format: zip_filename:path_in_zip:output_filename
           ZIPS=(
-            "opencode-windows-x64-baseline.zip:./opencode.exe:opencode-baseline.exe"
-            "opencode-windows-x64.zip:./opencode.exe:opencode.exe"
+            "opencode-windows-x64-baseline.zip:opencode.exe:opencode-baseline.exe"
+            "opencode-windows-x64.zip:opencode.exe:opencode.exe"
           )
           
           # Download and extract
-          echo "Starting download..."
+          echo "Downloading from version: $VERSION"
           for config in "${ZIPS[@]}"; do
             IFS=':' read -r zip_name path_in_zip output_name <<< "$config"
             
-            DOWNLOAD_URL=$(echo '${{ steps.source_release.outputs.release_info }}' | \
-              jq -r ".assets[] | select(.name == \"$zip_name\") | .browser_download_url")
+            DOWNLOAD_URL="$REPO_URL/$VERSION/$zip_name"
             
-            if [ -z "$DOWNLOAD_URL" ] || [ "$DOWNLOAD_URL" = "null" ]; then
-              echo "⚠️  Not found: $zip_name"
-              continue
-            fi
+            echo "Downloading: $zip_name from $DOWNLOAD_URL"
+            curl -L -f -o "downloads/$zip_name" "$DOWNLOAD_URL" || {
+              echo "❌ Failed to download: $zip_name"
+              exit 1
+            }
             
-            echo "Downloading: $zip_name"
-            curl -L -o "downloads/$zip_name" "$DOWNLOAD_URL"
-            
-            # Extract and copy
+            # Extract
             echo "Extracting: $zip_name"
             unzip -q "downloads/$zip_name" -d "downloads/$zip_name.extracted"
             
-            # Find and copy file - try with and without ./
+            # Debug: show available exe files
+            echo "Available files in $zip_name:"
+            find "downloads/$zip_name.extracted/" -type f \( -name "*.exe" -o -name "opencode*" \) | head -20
+            
+            # Find and copy file
             if [ -f "downloads/$zip_name.extracted/$path_in_zip" ]; then
               cp "downloads/$zip_name.extracted/$path_in_zip" "output/$output_name"
               echo "✓ $zip_name -> $output_name"
-            elif [ -f "downloads/$zip_name.extracted${path_in_zip#./}" ]; then
-              cp "downloads/$zip_name.extracted${path_in_zip#./}" "output/$output_name"
-              echo "✓ $zip_name -> $output_name"
             else
               echo "❌ Path not found: $path_in_zip in $zip_name"
-              echo "Directory contents:"
-              find "downloads/$zip_name.extracted/" -type f -name "*.exe" | head -20
               exit 1
             fi
           done
           
-          ls -la output/
+          echo "Final output:"
+          ls -lah output/
       
       - name: Create Release
-        if: steps.check_version.outputs.exists == 'false'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.source_release.outputs.tag_name }}
+          tag_name: ${{ github.event.inputs.version }}
           files: output/*
-          body: "These executables were automatically repackaged from OpenCode ${{ steps.source_release.outputs.tag_name }}.\n\nSee the original release: https://github.com/${{ env.SOURCE_OWNER }}/${{ env.SOURCE_REPO }}/releases/tag/${{ steps.source_release.outputs.tag_name }}"
+          body: "These executables were automatically repackaged from OpenCode [${{ github.event.inputs.version }}](https://github.com/anomalyco/opencode/releases/tag/${{ github.event.inputs.version }})."
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
