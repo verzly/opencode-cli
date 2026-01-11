@@ -1,24 +1,39 @@
 # OpenCode CLI
 
-Automated Windows executable repackager for [OpenCode](https://github.com/anomalyco/opencode) releases.
+Windows executable mirror of [OpenCode](https://github.com/anomalyco/opencode), automatically repackaged and released as standalone binaries.
+
+This repository exists because [bin](https://github.com/marcosnils/bin) — an effortless binary manager for Windows — can only manage `.exe` files directly. We extract the executables from OpenCode's release archives and publish them here so you can install and manage them with `bin`.
+
+## Installation
+
+First, install `bin` if you haven't already. Head over to the [installation instructions](https://github.com/marcosnils/bin#-installation).
+
+Then install the OpenCode binary:
+
+```bash
+bin install https://github.com/verzly/opencode-cli
+```
+
+When prompted, select the appropriate executable for your system.
+
+## Usage
+
+Once installed, you can use OpenCode directly from your command line. To update to the latest version:
+
+```bash
+bin update
+```
+
+To list all installed binaries:
+
+```bash
+bin list
+```
+
+## Important
+
+Make sure the directory where `bin` installs itself is included in your `$PATH` environment variable. This is typically done during the `bin` installation process, but you may need to verify it manually.
 
 ## About
 
-This repository automatically extracts and repackages Windows `.exe` files from OpenCode's release archives, making them readily available as standalone executables without additional extraction steps.
-
-## Source Repository
-
-**Original Project:** [anomalyco/opencode](https://github.com/anomalyco/opencode)
-
-## Available Executables
-
-- `opencode.exe` from `opencode-windows-x64.zip`
-- `opencode-baseline.exe` from `opencode-windows-x64-baseline.zip`
-
-## Downloads
-
-Get the latest executables from [Releases](../../releases)
-
----
-
-*This is an automated mirror. For the original project, visit [anomalyco/opencode](https://github.com/anomalyco/opencode).*
+This is an automated mirror that extracts Windows executables from the [original OpenCode project](https://github.com/anomalyco/opencode) and publishes them as releases. New versions are checked and released automatically.
