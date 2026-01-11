@@ -2,7 +2,7 @@
 
 Windows executable mirror of [OpenCode](https://github.com/anomalyco/opencode), automatically repackaged and released as standalone binaries.
 
-This repository exists because [bin](https://github.com/marcosnils/bin) — an effortless binary manager for Windows — can only manage `.exe` files directly. We extract the executables from OpenCode's release archives and publish them here so you can install and manage them with `bin`.
+This repository exists because [bin](https://github.com/marcosnils/bin) - an effortless binary manager for Windows - can only manage `.exe` files directly. We extract the executables from OpenCode's release archives and publish them here so you can install and manage them with `bin`.
 
 ## Installation
 
