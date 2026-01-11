@@ -79,8 +79,8 @@ jobs:
           ZIPS=(
             "opencode-windows-x64-baseline.zip:./opencode.exe:opencode-baseline.exe"
             "opencode-windows-x64.zip:./opencode.exe:opencode.exe"
-            "opencode-windows-x64.zip:./cli/tool.exe:opencode-cli.exe"
-            "opencode-windows-x64.zip:./server/server.exe:opencode-server.exe"
+            # "opencode-windows-x64.zip:./cli/tool.exe:opencode-cli.exe"
+            # "opencode-windows-x64.zip:./server/server.exe:opencode-server.exe"
           )
           
           # Download and extract
