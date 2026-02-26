@@ -1,3 +1,27 @@
+> [!NOTE]
+> Use `-a` flag for the CLI zip installer:
+> ```none
+> ❯ bin install https://github.com/anomalyco/opencode -a
+>   • Getting latest release for anomalyco/opencode
+> 
+> Multiple matches found, please select one:
+> 
+>  [1] latest.json
+>  [...]
+>  [18] opencode-desktop-windows-x64.exe        # Without -a flag, it finds an executable, but only the desktop version
+>  [19] opencode-desktop-windows-x64.exe.sig
+>  [...]
+>  [26] opencode-windows-x64-baseline.zip       # With -a flag, it lists everything, so the CLI zip installer appears as well
+>  [27] opencode-windows-x64.zip
+> 
+>  Select an option: 27
+> 
+>   • Starting download of https://api.github.com/repos/anomalyco/opencode/releases/assets/362179590
+> 53.39 MiB / 53.39 MiB [---------------------------------------------------------------------] 100.00% 115.98 MiB p/s 0s
+>   • Copying for opencode.exe@v1.2.14 into d:\program\bin\opencode.exe
+>   • Done installing opencode.exe v1.2.14
+> ```
+
 # OpenCode CLI
 
 Windows executable mirror of [OpenCode](https://github.com/anomalyco/opencode), automatically repackaged and released as standalone binaries.
